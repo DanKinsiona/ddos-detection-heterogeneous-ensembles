@@ -50,6 +50,7 @@ The hypothesis is that no single strategy will dominate across all metrics and t
 │   ├── runC_27feat_499995flows.csv      # Run C — 27 features, 499,995 flows
 │   └── runD_22feat_499995flows.csv      # Run D — 22 features, 499,995 flows
 └── scripts/
+    ├── flow_extractor_v2.py              # Converts raw .pcap captures into the flow-level CSVs in /data/
     ├── runA_and_runB.py                  # Reproduces Run A + Run B
     ├── runB_with_base_predictions.py     # Run B with base-classifier predictions saved for disagreement analysis
     └── runC_and_runD.py                  # Reproduces Run C + Run D
@@ -97,6 +98,7 @@ All four CSVs must sit in the same working directory as the scripts (or update t
 - **`runA_and_runB.py`** — Evaluates **all eight baseline models**, ranks them by weighted performance score, selects the top four, then runs the four ensemble strategies on Run A (27 features) followed by Run B (22 features after dropping the five TCP flag count columns).
 - **`runB_with_base_predictions.py`** — Re-runs Run B under the same locked top-four base classifiers but additionally saves per-fold base-classifier predictions. These feed the pairwise disagreement metric in the dissertation discussion section.
 - **`runC_and_runD.py`** — Stress-tests the locked top-four base classifiers at 5× scale (499,995 flows). Run C mirrors Run A's feature set; Run D mirrors Run B's feature set.
+- **`flow_extractor_v2.py`** — Converts raw `.pcap` captures (Wireshark traces of benign traffic and hping3-generated attack traffic) into the flow-level CSVs that the ML scripts consume. Not required for reproducing the ML results because the extracted CSVs are already provided in `/data/`.
 
 Each script writes its results CSVs to the working directory:
 - `ensemble_strategy_results_*.csv`  (per-strategy F1, MCC, Recall, Precision, Accuracy)
@@ -115,6 +117,25 @@ To preserve a fair head-to-head comparison, every run uses:
 - **`random_state = 42`** everywhere (model training, CV splits, meta-learner)
 - **Meta-learner:** Logistic Regression (Stacking)
 - **Identical hyperparameters** across Runs A/B/C/D
+
+---
+
+## Feature Extraction
+
+`flow_extractor_v2.py` converts raw `.pcap` captures into the flow-level CSVs used by the ML scripts.
+
+- **Input:** a single `.pcap` file plus a class label.
+- **Output:** a CSV of bidirectional flows, one row per flow.
+- **Flow timeouts:** 60-second idle timeout and 120-second active timeout, matching NetFlow/IPFIX convention. Long-lived connections are split into multiple flow records when either timeout fires.
+- **Per-flow features (22 numeric):** packet counts and byte counts in forward and backward directions; inter-arrival-time mean, min, max, standard deviation; packet size mean, min, max; bytes-per-packet, packet rate, byte rate; forward/backward packet and byte ratios; and TCP flag counts for SYN, ACK, FIN, RST and PSH. With the five identifier columns (src/dst IP and port, protocol), flow duration, total packets, total bytes and the label, each row has 30 columns.
+- **Run B and Run D** drop the five TCP flag count columns to give the 22-feature variant; Run A and Run C keep them for the 27-feature variant.
+
+**Usage:**
+```bash
+python flow_extractor_v2.py <input.pcap> <output.csv> <label>
+```
+
+The raw `.pcap` files are not included in this repository due to size. The pre-extracted CSVs in `/data/` are sufficient to reproduce every ML result.
 
 ---
 
