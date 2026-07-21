@@ -1,4 +1,4 @@
-# A Comparative Evaluation of Heterogeneous Ensemble Voting and Stacking Strategies for Multi-Class Flow-Based DDoS Detection
+# A Comparative Evaluation of Heterogeneous Ensemble Voting and Stacking Strategies for Multi-Class Flow-Based DDoS Detection (Machine Learning)
 
 **Author:** Dan Kinsiona  (Student ID: C2027282)
 **Supervisor:** Dr John Haggerty
